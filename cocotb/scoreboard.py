@@ -32,11 +32,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. '''
 """
 import logging
 import cocotb
+import itertools
 
 from cocotb.utils import hexdump, hexdiffs
 from cocotb.log import SimLog
 from cocotb.monitors import Monitor
 from cocotb.result import TestFailure, TestSuccess
+
+
+def highlight(string):
+    return "\033[" + "31m" + string + "\033[" + "39m " + "\033[" + "39m"
 
 
 class Scoreboard(object):
@@ -71,13 +76,14 @@ class Scoreboard(object):
             if len(expected_output):
                 self.log.warn("Still expecting %d transactions on %s" %
                               (len(expected_output), str(monitor)))
-                for index, transaction in enumerate(expected_output):
-                    self.log.info("Expecting %d:\n%s" %
-                                  (index, hexdump(str(transaction))))
-                    if index > 5:
-                        self.log.info("... and %d more to come" %
-                                      (len(expected_output) - index - 1))
-                        break
+                if isinstance(expected_output, str):
+                    for index, transaction in enumerate(expected_output):
+                        self.log.info("Expecting %d:\n%s" %
+                                      (index, hexdump(str(transaction))))
+                        if index > 5:
+                            self.log.info("... and %d more to come" %
+                                          (len(expected_output) - index - 1))
+                            break
                 fail = True
         if fail:
             return TestFailure("Not all expected output was received")
@@ -116,25 +122,28 @@ class Scoreboard(object):
             log.error("Received transaction differed from expected output")
             if not strict_type:
                 log.info("Expected:\n" + hexdump(strexp))
-            else:
-                log.info("Expected:\n" + repr(exp))
-            if not isinstance(exp, str):
-                try:
-                    for word in exp:
-                        log.info(str(word))
-                except:
-                    pass
-            if not strict_type:
                 log.info("Received:\n" + hexdump(strgot))
+                log.warning("Difference:\n%s" % hexdiffs(strexp, strgot))
             else:
-                log.info("Received:\n" + repr(got))
-            if not isinstance(got, str):
-                try:
-                    for word in got:
-                        log.info(str(word))
-                except:
-                    pass
-            log.warning("Difference:\n%s" % hexdiffs(strexp, strgot))
+                if not isinstance(exp, str) and not isinstance(got, str):
+                    nn = 10
+                    ne = 20
+                    ng = 20
+                    log.info("Point:".ljust(nn) + "Expected:".ljust(ne) + "Received\n".ljust(ng))
+                    #try:
+                    i = 0
+                    for expword, gotword in itertools.izip_longest(exp, got):
+                        r = str(i).ljust(nn) + str(expword).ljust(ne) + str(gotword).ljust(ng)
+                        i += 1
+                        if (expword != gotword):
+                            log.info(highlight(r))
+                        else:
+                            log.info(r)
+                    #except:
+                    #    pass
+                else:
+                    log.info("Expected:\n" + repr(exp))
+                    log.info("Received:\n" + repr(got))
             if self._imm:
                 raise TestFailure("Received transaction differed from expected"
                                   "transaction")
