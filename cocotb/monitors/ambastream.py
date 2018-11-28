@@ -1,8 +1,7 @@
-from cocotb.utils import hexdump
 from cocotb.decorators import coroutine
 from cocotb.monitors import BusMonitor
-from cocotb.triggers import RisingEdge, FallingEdge, ReadOnly
-from cocotb.fixedpoint import FXfamily, FXnum
+from cocotb.triggers import RisingEdge, ReadOnly
+from FixedPoint import FXfamily, FXnum
 
 
 class AxisSlave(BusMonitor):
@@ -13,8 +12,8 @@ class AxisSlave(BusMonitor):
     _optional_signals = ["tready", "tlast"]
 
     def __init__(self, *args, **kwargs):
-        self.dtype = kwargs.pop('dtype',int)
-        self.pkg_size = kwargs.pop('pkg_size',16)
+        self.dtype = kwargs.pop('dtype', int)
+        self.pkg_size = kwargs.pop('pkg_size', 16)
         BusMonitor.__init__(self, *args, **kwargs)
         self.pkt = list()
 
@@ -32,7 +31,6 @@ class AxisSlave(BusMonitor):
 
         # Avoid spurious object creation by recycling
         clkedge = RisingEdge(self.clock)
-        negclk = FallingEdge(self.clock)
         rdonly = ReadOnly()
         self.pkt = list()
 
@@ -48,7 +46,7 @@ class AxisSlave(BusMonitor):
                 continue
             if tvalid():
                 if isinstance(self.dtype, FXfamily):
-                    word = FXnum(0.0,self.dtype)
+                    word = FXnum(0.0, self.dtype)
                     word.scaledval = self.bus.tdata.value.signed_integer
                     self.pkt.append(word)
                 else:

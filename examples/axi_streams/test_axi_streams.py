@@ -32,18 +32,17 @@ import cocotb
 import numpy as np
 
 from cocotb.clock import Clock
-from cocotb.triggers import Timer, RisingEdge, Event
+from cocotb.triggers import RisingEdge, Event
 from cocotb.drivers import BitDriver
 from cocotb.drivers.ambastream import AxisMaster
 from cocotb.monitors.ambastream import AxisSlave
 from cocotb.regression import TestFactory
 from cocotb.scoreboard import Scoreboard
-from cocotb.result import TestFailure, raise_error
-from cocotb.fixedpoint import FXnum, FXfamily, FXoverflowError
+from cocotb.result import TestFailure
+from FixedPoint import FXfamily
 
 
 # Data generators
-from cocotb.generators.byte import random_data, get_bytes
 from cocotb.generators.bit import (wave, intermittent_single_cycles,
                                    random_50_percent)
 
@@ -56,13 +55,11 @@ class EndianSwapperTB(object):
         self.aresetn = reset
         self.axis_tdata_size = dut.AXIS_TDATA_WIDTH
         self.latch_type = dut.REG_TYPE
-        #fptype_in=FXfamily(6,2)
-        #fptype_out=FXfamily(6,2)
-        fptype_in=int
-        fptype_out=int
+        fptype_in = FXfamily(6, 2)
+        fptype_out = FXfamily(6, 2)
         self.stream_in = AxisMaster(dut, "s_axis", clk, dtype=fptype_in)
         self.backpressure = BitDriver(self.dut.m_axis_tready, clk)
-        if self.latch_type==0:
+        if self.latch_type == 0:
             self.event = Event()
         else:
             self.event = None
@@ -71,7 +68,6 @@ class EndianSwapperTB(object):
         # Reconstruct the input transactions from the pins
         # and send them to our 'model'
         self.stream_in_recovered = AxisSlave(dut, "s_axis", clk, callback=self.model, dtype=fptype_in)
-
 
         # Create a scoreboard on the stream_out bus
         self.pkts_sent = 0
@@ -87,7 +83,7 @@ class EndianSwapperTB(object):
     def model(self, transaction):
         """Model the DUT based on the input transaction"""
         self.dut._log.info("Sent a packet of %d words" % len(transaction))
-        #trans = [FXnum(float(x),self.stream_out.dtype) for x in transaction]
+        # trans = [FXnum(float(x),self.stream_out.dtype) for x in transaction]
         trans = transaction
         self.expected_output.append(trans)
         self.pkts_sent += 1
@@ -147,6 +143,8 @@ def run_test(dut, data_in=None, idle_inserter=None,
         dut._log.info("DUT correctly counted %d packets" % tb.pkts_sent)
 
     raise tb.scoreboard.result
+
+
 '''
 def random_float(lower=-1.0, upper=1.0):
     while True:
@@ -155,18 +153,21 @@ def random_float(lower=-1.0, upper=1.0):
 def random_int(lower=0, upper=256):
     return random.randrange(lower,upper))
 '''
+
+
 def random_floats(num, lower=-1.0, upper=1.0):
-    return [np.random.uniform(lower,upper) for _ in range(num)]
+    return [np.random.uniform(lower, upper) for _ in range(num)]
+
 
 def random_ints(num, lower=0, upper=9):
-    return [random.randrange(lower,upper) for _ in range(num)]
+    return [random.randrange(lower, upper) for _ in range(num)]
+
 
 def random_packet_sizes(data_generator=None, config_gen=None):
     """random string data of a random length"""
     for i in range(5):
         pkt_size = random.randint(20, 20)
-        yield [ 1,2,3,4,5,6,7,8,9,10 ]
-        #yield random_floats(pkt_size, -1.0, 1.0)
+        yield random_floats(pkt_size, -1.0, 1.0)
 
 
 factory = TestFactory(run_test)
@@ -177,4 +178,3 @@ factory.add_option("idle_inserter",
 factory.add_option("backpressure_inserter",
                    [None, wave, intermittent_single_cycles, random_50_percent])
 factory.generate_tests("A_")
-

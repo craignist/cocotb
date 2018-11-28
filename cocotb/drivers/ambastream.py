@@ -1,12 +1,9 @@
-import cocotb
-
 from cocotb.decorators import coroutine
 from cocotb.triggers import RisingEdge
 from cocotb.triggers import ReadOnly
 from cocotb.drivers import ValidatedBusDriver
-from cocotb.utils import hexdump
 from cocotb.binary import BinaryValue
-from cocotb.fixedpoint import FXfamily, FXnum
+from FixedPoint import FXfamily, FXexception
 
 
 class AxisMaster(ValidatedBusDriver):
@@ -14,7 +11,7 @@ class AxisMaster(ValidatedBusDriver):
     _optional_signals = ["tready", "tlast"]
 
     def __init__(self, *args, **kwargs):
-        self.dtype = kwargs.pop('dtype',int)
+        self.dtype = kwargs.pop('dtype', int)
         ValidatedBusDriver.__init__(self, *args, **kwargs)
 
         word = BinaryValue(bits=len(self.bus.tdata), bigEndian=False)
@@ -49,16 +46,10 @@ class AxisMaster(ValidatedBusDriver):
         firstword = True
 
         word = BinaryValue(bits=len(self.bus.tdata), bigEndian=False)
-        single = BinaryValue(bits=1)
 
-        # Drive some defaults since we don't know what state we're in
-        #self.bus.tvalid <= 0
         count = len(pkt)
 
         for cur_word in pkt:
-            #if not firstword or (firstword and sync):
-            #    yield clkedge
-
             if hasattr(self.bus, "tlast"):
                 count -= 1
                 if count == 0:
@@ -85,9 +76,9 @@ class AxisMaster(ValidatedBusDriver):
                 firstword = False
 
             if isinstance(self.dtype, FXfamily):
-                try :
+                try:
                     word.integer = self.dtype(cur_word)._toTwosComplement()[0]
-                except:
+                except FXexception:
                     self.log.error("Overflow error fitting %f into %s" % (cur_word, str(self.dtype)))
                     raise
             else:
