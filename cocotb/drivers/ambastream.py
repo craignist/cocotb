@@ -23,7 +23,8 @@ class AxisMaster(ValidatedBusDriver):
 
         self.bus.tvalid <= 0
         self.bus.tdata <= 0
-        self.bus.tlast <= 0
+        if hasattr(self.bus, "tlast"):
+            self.bus.tlast <= 0
         self.log.info("Initializing AXIS Driver")
 
     @coroutine
