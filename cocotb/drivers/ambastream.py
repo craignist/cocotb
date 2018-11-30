@@ -82,7 +82,7 @@ class AxisMaster(ValidatedBusDriver):
                     self.log.error("Overflow error fitting %f into %s" % (cur_word, str(self.dtype)))
                     raise
             else:
-                word.integer = cur_word
+                word = cur_word
 
             self.bus.tdata <= word
 
